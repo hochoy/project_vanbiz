@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Mapping Businesses</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="css/portfolio-item.css" rel="stylesheet">
+
+    <!-- Mapbox CSS and js -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v0.28.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v0.28.0/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v2.0.1/mapbox-gl-geocoder.js"></script>
+    <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v2.0.1/mapbox-gl-geocoder.css" type="text/css" />
+    <link rel="stylesheet" href="css/loader_style.css" />
+    <link rel="stylesheet" href="css/mapbox.css" />
+    <link rel="stylesheet" href="css/marker.css" />
+    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /> -->
+
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="https://hochoy.github.io/project_portfolio2/">David's Portfolio</a>
+            </div>
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <!-- <li>
+                        <a href="https://hochoy.github.io/project_portfolio/">About</a>
+                    </li> -->
+                    <li>
+                        <a href="https://hochoy.github.io/project_portfolio/">Projects</a>
+                    </li>
+                    <!-- <li>
+                        <a href="https://hochoy.github.io/project_portfolio/">Contact</a>
+                    </li> -->
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+        </div>
+        <!-- /.container -->
+    </nav>
+
+    <!-- Page Content -->
+    <div class="container">
+
+        <!-- Portfolio Item Heading -->
+        <div class="row">
+            <div class="col-lg-12">
+                <h1 class="page-header">Mapbox Mapping
+                    <small>via geoJSON</small>
+                </h1>
+            </div>
+        </div>
+        <!-- /.row -->
+
+
+        <!-- MAPBOX CONTENT -->
+        <div id="appframe">
+            <!-- map goes here  -->
+            <div id="map">
+                <div id="loader" style="display: none"></div>
+            </div>
+            <!-- right sidebar goes here -->
+            <div id="sidebar" >
+
+                <!-- Enter mapbox token -->
+                <form>
+                    <div class="form-group">
+                        <label for="input_token">Step 1: Enter mapbox access token</label>
+                        <input id="input_token" type="text" class="form-control" value="pk.eyJ1IjoiaG9jaG95IiwiYSI6ImNpdjc5d3NkZTAwMGEydG8yNHhqZ3B3bGEifQ.dpS_6YxfS-z5qTzbR13Gjw" name="input_token" onfocus="this.select();" placeholder="Enter mapbox access token here">
+                    </div>
+                </form>
+                <br />
+
+                <!-- Reload map using mapbox token -->
+                <label for="reloadmap">Step 2: Load the standard map</label>
+                <button id="reloadmap" type="button" class="btn btn-default btn-block" onclick="attemptloadmapbox()">Reload Map</button>
+                <br />
+
+                <!-- Center zoom and pitch the map on metro vancouver -->
+                <label for="fly">Step 3: Center the map on metro vancouver</label>
+                <button id="fly" type="button" class="btn btn-default btn-block">Center</button>
+                <br />
+
+                <!-- Download sample geojson file -->
+                <label>Step 4: Download sample geojson file</label>
+                <button id="downloadtest" type="button" class="btn btn-default btn-block">Download!</button>
+                <a id="downloadjson" href="json/vanbiz_vancouver.geojson" download></a>
+                <br />
+
+                <script>
+                    $(document).ready(function() {
+                        $('#downloadtest').on('click', function() {
+                            $('#downloadjson')[0].click();
+                            console.log("dload");
+                        })
+                    })
+                </script>
+
+                <!-- Import the sample geojson file or your own geojson file -->
+                <label>Step 5: Load City of Vancouver businesses</label>
+                <button id="loadsample" type="button" class="btn btn-default btn-block" onclick="loadsample()">Load Sample</button>
+                <br />
+
+                <label>Step 6: Import any geojson file</label>
+                <input type="file" id="selectFiles" value="Import" /><br />
+                <button id="import" type="button" class="btn btn-default btn-block">Load GeoJSON</button>
+                <br />
+
+
+            </div>
+            <br style="clear:both;" />
+
+        </div>
+
+
+        <hr>
+
+        <!-- mapbox and functionality scripts -->
+        <script src="js/mapbox_animate.js"></script>
+        <script src="js/mapbox_forms.js"></script>
+        <script src="js/check_token.js"></script>
+        <script src="js/mapbox_loadmap.js"></script>
+        <script src="js/load_json.js"></script>
+        <script>
+            $(window).on('load', attemptloadmapbox());
+        </script>
+
+        <!-- Footer -->
+        <footer>
+            <div class="row">
+                <div class="col-lg-12">
+                    <p>Copyright &copy; DavidChoy 2017</p>
+                </div>
+            </div>
+            <!-- /.row -->
+        </footer>
+
+    </div>
+    <!-- /.container -->
+
+    <!-- jQuery -->
+    <script src="js/jquery.js"></script>
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="js/bootstrap.min.js"></script>
+
+</body>
+
+</html>

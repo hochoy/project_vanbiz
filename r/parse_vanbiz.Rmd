@@ -14,7 +14,7 @@ options(knitr.table.format = 'markdown')
 
 ***  
 
-[See repo for a better markdown render of this page](https://github.com/hochoy/project_portfolio2/)  
+See my [mapbox visualization of Vancouver business licenses](https://hochoy.github.io/project_vanbiz/mapbox.html) using cleaned, filtered and geocoded data.  
   
 
 ### Main objective  
@@ -35,20 +35,20 @@ library(RCurl)
 library(gridExtra) #arranging multiple plots together
 # library(plotly) #plotly bar graph labels are broken
 library(knitr) # for knitting the R markdown file into markdown and html
-source("~/Developer/project_portfolio2/custom_func.R") # I wrote a set of utility functions for quickly reading/writing tsv files and to play a sound when super-slow functions finish running.
+source("~/Developer/project_vanbiz/r/custom_func.R") # I wrote a set of utility functions for quickly reading/writing tsv files and to play a sound when super-slow functions finish running.
 ```  
   
 ### Read in the business license file (json) and having a quick look at the data  
 
-Then, I downloaded the vancouver business licenses from the [City of Vancouver Open Data portal](http://data.vancouver.ca/datacatalogue/businessLicence.htm). I've chosen to use the json format of the file here but csv is also available at the vancouver open data website. After reading the data, I usually add an index column to keep track of rows before doing any manipulation. Additionally, it is a good idea to check the size of a dataset. If there are a million rows in a dataset that should only have 10,000 entries, there is a high chance that the file was not read in correctly.  
+Then, I downloaded the 2016 vancouver business licenses from the [City of Vancouver Open Data portal](http://data.vancouver.ca/datacatalogue/businessLicence.htm). I've chosen to use the json format of the file here but csv is also available at the vancouver open data website. After reading the data, I usually add an index column to keep track of rows before doing any manipulation. Additionally, it is a good idea to check the size of a dataset. If there are a million rows in a dataset that should only have 10,000 entries, there is a high chance that the file was not read in correctly.  
   
 ```{r read}
-json_path <- "~/Developer/project_portfolio2/business_licences.json"
+json_path <- "~/Developer/project_vanbiz/r/2016business_licences.json"
 vanbiz_raw <- fromJSON(json_path)
 vanbiz_df <- vanbiz_raw$features$properties %>%
   mutate(index = 1:nrow(.)) %>% 
   select(index,everything()) 
-vanbiz_df %>% nrow() # 61391 companies registered with the City of Vancouver. That's a lot!
+vanbiz_df %>% nrow() # 61399 companies registered with the City of Vancouver. That's a lot!
 ```  
 
 ####Finding dirt in the data####  
@@ -84,13 +84,16 @@ When tackling any big dataset, the first question to ask is if we can focus our 
 
 
 ```{r echo=F,warning=F,message=F}
+library(ggthemes)
 plot_status <- (vanbiz_df %>% 
   group_by(Status) %>% 
   summarize(n_companies=n()) %>% 
   ungroup() %>% 
   mutate(percent = paste0(round(n_companies/sum(n_companies) * 100,2)," %","\n",n_companies)) %>% 
   ggplot(aes(x=Status,y=n_companies,fill=Status,label=percent)) +
-  geom_bar(stat="identity") + geom_text(nudge_y = 2300)+ theme(legend.position="none")) #%>% ggplotly()
+  xlab("Business Status") + ylab("Number of companies") + theme_tufte()+
+  geom_bar(stat="identity") + geom_text(nudge_y = 2300)+ theme(legend.position="none")) +
+  theme(axis.text.x=element_text(angle=-45,hjust=0,vjust=1)) 
 
 plot_employee <- (vanbiz_df %>% 
   mutate(morethan10_employees = (NumberOfEmployees >= 10)) %>% 
@@ -98,7 +101,8 @@ plot_employee <- (vanbiz_df %>%
   summarize(n_companies=n()) %>% 
   mutate(percent = paste0(round(n_companies/sum(n_companies) * 100,2)," %","\n",n_companies)) %>% 
   ggplot(aes(x=morethan10_employees,y=n_companies,fill=morethan10_employees,label=percent)) +
-  geom_bar(stat="identity") + geom_text(nudge_y = -2700) + theme(legend.position="none"))# %>% ggplotly()
+  xlab("Has more than 10 employees") + ylab("Number of companies") + theme_tufte() +
+  geom_bar(stat="identity") + geom_text(nudge_y = -2700) + theme(legend.position="none")) 
 
 plot_province_canada_and_null <- (vanbiz_df %>% 
   group_by(Country,Province) %>% 
@@ -173,7 +177,7 @@ vanbiz_valid <- vanbiz_df %>%
   filter(NumberOfEmployees >= 10) %>% 
   filter(Status %in% c("Issued","Pending")) %>% 
   filter(!is.na(BusinessName))
-n_biz_valid <- nrow(vanbiz_valid) # 6149 businesses that pass our filter
+n_biz_valid <- nrow(vanbiz_valid) # 6131 businesses that pass our filter
 ```  
 
 After filtering, what we end up with is a list of `r n_biz_valid` companies with registered BC addresses and more than 10 employees (qualifying it as a Small-to-Medium Enterprise). These are the companies that we will focus on.  
@@ -204,10 +208,10 @@ vanbiz_latlongcheck <- vanbiz_valid %>%
   mutate(hascoord = (!is.na(Latitude) & !is.na(Longitude))) %>% 
   mutate(hasaddress = (!is.na(House) & !is.na(Street)))
 
-n_biz_wcoord <- vanbiz_latlongcheck %>% filter(hascoord) %>% nrow() # 5442 biz have coords -> READY
-n_biz_nocoord <- vanbiz_latlongcheck %>% filter(!hascoord) %>% nrow() # 707 biz have no coords
+n_biz_wcoord <- vanbiz_latlongcheck %>% filter(hascoord) %>% nrow() # 5426 biz have coords -> READY
+n_biz_nocoord <- vanbiz_latlongcheck %>% filter(!hascoord) %>% nrow() # 705 biz have no coords
 n_biz_waddress <- vanbiz_latlongcheck %>% filter(!hascoord) %>% 
-  filter(hasaddress) %>% nrow()                       # 665 biz have address -> GEOCODE
+  filter(hasaddress) %>% nrow()                       # 663 biz have address -> GEOCODE
 n_biz_noaddress <- vanbiz_latlongcheck %>% filter(!hascoord) %>% 
   filter(!hasaddress) %>% nrow()                       # 42 biz have no address -> Google API 
 ```  
@@ -225,7 +229,7 @@ vanbiz_pregeocoded <- vanbiz_latlongcheck %>%
   mutate(full_address = "not set",
          geocode = "not run")
 
-# write_rds(vanbiz_pregeocoded,"~/Developer/project_portfolio2/vanbiz_pregeocoded.rds")
+# write_rds(vanbiz_pregeocoded,"~/Developer/project_vanbiz/r/vanbiz_pregeocoded.rds")
 ```
 
 
@@ -234,7 +238,7 @@ vanbiz_pregeocoded <- vanbiz_latlongcheck %>%
 While creating a function for geocoding, I created a simple helper function below that could detect whether the geocode was sucessful.
 
 ```{r}
-vanbiz_pregeocoded <- read_rds("~/Developer/project_portfolio2/vanbiz_pregeocoded.rds")
+vanbiz_pregeocoded <- read_rds("~/Developer/project_vanbiz/r/vanbiz_pregeocoded.rds")
 
 #helper function
 isGeocoded <- function(geocode_list) {
@@ -306,7 +310,7 @@ geocode_biz <- function(vanbiz_df) {
 }
 
 # vanbiz_geocoded <- geocode_biz(vanbiz_pregeocoded)
-# write_rds(vanbiz_geocoded,"~/Developer/project_portfolio2/vanbiz_geocoded.rds")
+# write_rds(vanbiz_geocoded,"~/Developer/project_vanbiz/r/vanbiz_geocoded.rds")
 ```  
   
 Installing a [nominatim server/local instance that runs on OpenStreetMap](https://wiki.openstreetmap.org/wiki/Nominatim/Installation) is an alternative to using the `geocode` package or other hosted geocoding API.  
@@ -322,11 +326,11 @@ Businesses that do not have addresses that could be geocoded require querying vi
 The function below uses the `nearbysearch` API of google. Query requests of this type uses a simple url `"https://maps.googleapis.com/maps/api/place/nearbysearch/json?"` followed by fields such as location, radius, name as well as a mandatory User API key to limit queries. Besides generating a url query, my  function has a randomizer that ensures our requests occur at random intervals. This randomization serves no purpose at the moment as google only requires an API user to limit their rate of query. However, the intention was for it to simulate a human user. The last purpose of this function is to parse the query result and add the desired fields into our original dataframe.    
 
 ```{r}
-vanbiz_geocoded <- read_rds("~/Developer/project_portfolio2/vanbiz_geocoded.rds")
+vanbiz_geocoded <- read_rds("~/Developer/project_vanbiz/r/vanbiz_geocoded.rds")
 
-View(vanbiz_geocoded$vanbiz_hascoord) # 5442 biz have valid coordinates
+View(vanbiz_geocoded$vanbiz_hascoord) # 5426 biz have valid coordinates
 View(vanbiz_geocoded$vanbiz_hasaddress_success) # 659 biz have addresses that were successfully geocoded
-View(vanbiz_geocoded$vanbiz_googlesearch) # 48 have no addresses or have addresses that were NOT sucessfully geocoded
+View(vanbiz_geocoded$vanbiz_googlesearch) # 46 have no addresses or have addresses that were NOT sucessfully geocoded
 
 # run google search api on these addresses to get addressses for geocoding
 # performed via https://developers.google.com/places/web-service/search
@@ -402,21 +406,23 @@ google_maps_search <- function(query_df = vanbiz_geocoded$vanbiz_googlesearch,
 
 # vanbiz_googlesearched <- google_maps_search(query_df=vanbiz_geocoded$vanbiz_googlesearch)
 # write_rds(vanbiz_googlesearched,
-#           path = "~/Developer/project_portfolio2/vanbiz_googlesearched.rds")
+          # path = "~/Developer/project_vanbiz/r/vanbiz_googlesearched.rds")
 ```
 
 ### Manual inspection of GoogleMapsAPI query results  
 
 More often than not, there are disrepancies between the query result and the actual business information. Through this, I learned that even google is not perfect when it comes to data collection. Thus, it is always important to look at subsamples of the data before producing a final output.  
 
-Below I have included a simple function to query a business name or string if I spot any suspicious google results. Preliminary view of the data shows that some businesses were sufficiently accurate but for simplicity and to save time, I have chosen to abandon the 48 googlesearched results. This leaves
+Below I have included a simple function to query a business name or string if I spot any suspicious google results. Preliminary view of the data shows that some businesses were sufficiently accurate but for simplicity and to save time, I have chosen to abandon the 46 googlesearched results. This leaves
 me with the vanbiz_hascoord and vanbiz_hasaddress_success datasets.  
 
 ```{r results='asis'}
 # Look for any disrepancies between our business name and the google maps search
-vanbiz_googlesearched <- read_rds("~/Developer/project_portfolio2/vanbiz_googlesearched.rds")
+vanbiz_googlesearched <- read_rds("~/Developer/project_vanbiz/r/vanbiz_googlesearched.rds")
 vanbiz_view <- vanbiz_googlesearched %>% select(BusinessName,goo_name,everything())
+```
 
+```{r echo=FALSE}
 #tester function
 google_query <- function(query_string) {
   link = paste0("https://maps.googleapis.com/maps/api/place/nearbysearch/json?",
@@ -431,6 +437,9 @@ google_query <- function(query_string) {
   link %>% getURL() %>% fromJSON()
 }
 # abc <- google_query("Karoleena Homes")
+```
+
+```{r results='asis'}
 kable(head(vanbiz_view))
 ```
 
@@ -458,15 +467,15 @@ Then, we combine the 2 datasets via `rbind()`. We also remove the geocode column
 vanbiz_kept <- rbind(vanbiz_geocoded$vanbiz_hascoord,
                      vanbiz_geocoded$vanbiz_hasaddress_success)
 
-nrow(vanbiz_kept) # 6101 businesses
+nrow(vanbiz_kept) # 6085 businesses
 
 # remove the geocode column which is a list. This would throw errors during geojson_write()
 vanbiz_vancouver <- vanbiz_kept %>% 
   select(-geocode)
 kable(head(vanbiz_vancouver))
 # write_rds(vanbiz_vancouver,
-#           "~/Developer/project_portfolio2/vanbiz_vancouver.rds")
-# vanbiz_vancouver <- read_rds("~/Developer/project_portfolio2/vanbiz_vancouver.rds")
+#           "~/Developer/project_vanbiz/r/vanbiz_vancouver.rds")
+# vanbiz_vancouver <- read_rds("~/Developer/project_vanbiz/r/vanbiz_vancouver.rds")
 ```  
 
 ### Finaly geojson conversion  
@@ -478,13 +487,13 @@ suppressPackageStartupMessages(library(geojsonio))
 
 # geojson_json(vanbiz_kept[1:2,], lat = 'Latitude', lon = 'Longitude')
 # geojson_write(vanbiz_vancouver, lat = 'Latitude', lon = 'Longitude',
-#               file = "~/Developer/project_portfolio2/vanbiz_vancouver.geojson",
+#               file = "~/Developer/project_vanbiz/json/vanbiz_vancouver.geojson",
 #               overwrite = T)
 ```  
 
 ### Final result  
 
-See my [mapbox visualization of Vancouver business licenses](https://hochoy.github.io/project_portfolio2/mapbox.html) using cleaned, filtered and geocoded data.  
+See my [mapbox visualization of Vancouver business licenses](https://hochoy.github.io/project_vanbiz/mapbox.html) using cleaned, filtered and geocoded data.  
 
 ***  
 

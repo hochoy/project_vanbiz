@@ -6,7 +6,7 @@ David Choy
 
 ***  
 
-[See repo for a better markdown render of this page](https://github.com/hochoy/project_portfolio2/)  
+See my [mapbox visualization of Vancouver business licenses](https://hochoy.github.io/project_vanbiz/mapbox.html) using cleaned, filtered and geocoded data.  
   
 
 ### Main objective  
@@ -28,25 +28,25 @@ library(RCurl)
 library(gridExtra) #arranging multiple plots together
 # library(plotly) #plotly bar graph labels are broken
 library(knitr) # for knitting the R markdown file into markdown and html
-source("~/Developer/project_portfolio2/custom_func.R") # I wrote a set of utility functions for quickly reading/writing tsv files and to play a sound when super-slow functions finish running.
+source("~/Developer/project_vanbiz/r/custom_func.R") # I wrote a set of utility functions for quickly reading/writing tsv files and to play a sound when super-slow functions finish running.
 ```
   
 ### Read in the business license file (json) and having a quick look at the data  
 
-Then, I downloaded the vancouver business licenses from the [City of Vancouver Open Data portal](http://data.vancouver.ca/datacatalogue/businessLicence.htm). I've chosen to use the json format of the file here but csv is also available at the vancouver open data website. After reading the data, I usually add an index column to keep track of rows before doing any manipulation. Additionally, it is a good idea to check the size of a dataset. If there are a million rows in a dataset that should only have 10,000 entries, there is a high chance that the file was not read in correctly.  
+Then, I downloaded the 2016 vancouver business licenses from the [City of Vancouver Open Data portal](http://data.vancouver.ca/datacatalogue/businessLicence.htm). I've chosen to use the json format of the file here but csv is also available at the vancouver open data website. After reading the data, I usually add an index column to keep track of rows before doing any manipulation. Additionally, it is a good idea to check the size of a dataset. If there are a million rows in a dataset that should only have 10,000 entries, there is a high chance that the file was not read in correctly.  
   
 
 ```r
-json_path <- "~/Developer/project_portfolio2/business_licences.json"
+json_path <- "~/Developer/project_vanbiz/r/2016business_licences.json"
 vanbiz_raw <- fromJSON(json_path)
 vanbiz_df <- vanbiz_raw$features$properties %>%
   mutate(index = 1:nrow(.)) %>% 
   select(index,everything()) 
-vanbiz_df %>% nrow() # 61391 companies registered with the City of Vancouver. That's a lot!
+vanbiz_df %>% nrow() # 61399 companies registered with the City of Vancouver. That's a lot!
 ```
 
 ```
-## [1] 61391
+## [1] 61399
 ```
 
 ####Finding dirt in the data####  
@@ -62,32 +62,32 @@ vanbiz_df %>% str()
 ```
 
 ```
-## 'data.frame':	61391 obs. of  25 variables:
+## 'data.frame':	61399 obs. of  25 variables:
 ##  $ index                : int  1 2 3 4 5 6 7 8 9 10 ...
-##  $ LicenceRSN           : chr  "2558952" "2558953" "2558954" "2558955" ...
-##  $ LicenceNumber        : chr  "16-100147" "16-100148" "16-100149" "16-100150" ...
+##  $ LicenceRSN           : chr  "2827400" "2827855" "2827440" "2836504" ...
+##  $ LicenceNumber        : chr  "16-301757" "16-302202" "16-301796" "16-308971" ...
 ##  $ LicenceRevisionNumber: chr  "00" "00" "00" "00" ...
-##  $ BusinessName         : chr  "Beaver Pond Creative Productions Inc " "Aimee Claire Mergaert (Aimee Mergaert)" "Carol Elinor Sawyer (Carol Sawyer)" "Third Dimension Studio Inc " ...
-##  $ BusinessTradeName    : chr  NA "Aimee Mergaert Designs " NA NA ...
-##  $ Status               : chr  "Issued" "Issued" "Issued" "Gone Out of Business" ...
-##  $ IssuedDate           : chr  "2015-12-04 15:01:24" "2015-12-30 16:56:31" "2015-11-05 15:14:51" NA ...
-##  $ ExpiredDate          : chr  "2016-12-31 00:00:00" "2016-12-31 00:00:00" "2016-12-31 00:00:00" NA ...
-##  $ BusinessType         : chr  "Artist" "Artist" "Artist" "Artist" ...
-##  $ BusinessSubType      : chr  NA NA NA NA ...
+##  $ BusinessName         : chr  "Mingxia Wang & Yicheng Xie " "LTP Productions Inc " "Everbright Developments Inc " "Qi Bo Wang (Qi Wang)" ...
+##  $ BusinessTradeName    : chr  NA NA NA NA ...
+##  $ Status               : chr  "Pending" "Issued" "Issued" "Issued" ...
+##  $ IssuedDate           : chr  NA "2016-10-28 11:01:01" "2016-10-28 09:36:09" "2016-11-14 12:58:23" ...
+##  $ ExpiredDate          : chr  NA "2016-12-31 00:00:00" "2016-12-31 00:00:00" "2016-12-31 00:00:00" ...
+##  $ BusinessType         : chr  "Secondary Suite - Permanent" "Electrical-Temporary (Filming)" "Contractor" "One-Family Dwelling" ...
+##  $ BusinessSubType      : chr  "Primary (1 Rental) and Laneway" NA "Building" "Primary (1 Rental)" ...
 ##  $ Unit                 : chr  NA NA NA NA ...
 ##  $ UnitType             : chr  NA NA NA NA ...
-##  $ House                : chr  NA NA NA NA ...
-##  $ Street               : chr  NA NA NA NA ...
-##  $ City                 : chr  NA NA NA NA ...
-##  $ Province             : chr  NA NA NA NA ...
-##  $ Country              : chr  NA NA NA NA ...
-##  $ PostalCode           : chr  NA NA NA NA ...
-##  $ LocalArea            : chr  "08-Fairview" "15-Kensington-Cedar Cottage" "03-Strathcona" "15-Kensington-Cedar Cottage" ...
-##  $ NumberOfEmployees    : chr  "000" "0" "1" "0" ...
-##  $ FeePaid              : num  136 136 136 NA NA 136 136 136 NA NA ...
-##  $ ExtractDate          : chr  "2016-12-23" "2016-12-23" "2016-12-23" "2016-12-23" ...
+##  $ House                : chr  NA "2601" "3007" NA ...
+##  $ Street               : chr  NA "Lougheed Hwy" "Plateau Blvd" NA ...
+##  $ City                 : chr  NA "Coquitlam" "Coquitlam" NA ...
+##  $ Province             : chr  NA "BC" "BC" NA ...
+##  $ Country              : chr  NA "CAN" "CAN" NA ...
+##  $ PostalCode           : chr  NA "V3C 4J2" "V3E 2T1" NA ...
+##  $ LocalArea            : chr  "05-Hastings-Sunrise" NA NA "18-Oakridge" ...
+##  $ NumberOfEmployees    : chr  "000" "000" "2" "000" ...
 ##  $ Latitude             : num  NA NA NA NA NA NA NA NA NA NA ...
 ##  $ Longitude            : num  NA NA NA NA NA NA NA NA NA NA ...
+##  $ FeePaid              : num  NA 95 94 65 3017 ...
+##  $ ExtractDate          : chr  "2017-07-28" "2017-07-28" "2017-07-28" "2017-07-28" ...
 ```
   
 ### Fixing integers that are read as characters  
@@ -131,7 +131,7 @@ When tackling any big dataset, the first question to ask is if we can focus our 
 
 
 
-After filtering, what we end up with is a list of 6149 companies with registered BC addresses and more than 10 employees (qualifying it as a Small-to-Medium Enterprise). These are the companies that we will focus on.  
+After filtering, what we end up with is a list of 6131 companies with registered BC addresses and more than 10 employees (qualifying it as a Small-to-Medium Enterprise). These are the companies that we will focus on.  
 
 
 ```r
@@ -144,18 +144,18 @@ nrow(vanbiz_valid)
 ```
 
 ```
-## [1] 6149
+## [1] 6131
 ```
 
 
-|BusinessName                        |Status |BusinessType      |House |Street       |Province | NumberOfEmployees|
-|:-----------------------------------|:------|:-----------------|:-----|:------------|:--------|-----------------:|
-|CHR Holdings Inc                    |Issued |Animal Services   |5980  |Miller Rd    |BC       |                12|
-|Love's Auctioneers & Appraisers Ltd |Issued |Auctioneer        |2720  |No 5 Road    |BC       |                10|
-|Tivoli Moving Picture Caterers Inc  |Issued |Caterer           |2190  |Badger Rd    |BC       |                10|
-|Westcana Services Inc               |Issued |Personal Services |5550  |152nd Street |BC       |                62|
-|FDM Software Ltd                    |Issued |Computer Services |949   |W 3rd St     |BC       |                30|
-|Teraspan Networks Inc               |Issued |Computer Services |6870  |Palm Avenue  |BC       |                13|
+|BusinessName                                      |Status |BusinessType                |House |Street      |Province | NumberOfEmployees|
+|:-------------------------------------------------|:------|:---------------------------|:-----|:-----------|:--------|-----------------:|
+|Artcraft Display Graphics Inc                     |Issued |Contractor - Special Trades |1533  |Broadway St |BC       |                12|
+|Britco LP                                         |Issued |Contractor                  |20091 |91A Ave     |BC       |               330|
+|Cobra Interiors Ltd                               |Issued |Contractor                  |2401  |United Blvd |BC       |                20|
+|Jamieson's Pet Food Distributors Ltd              |Issued |Wholesale  Dealer           |7471  |Vantage Way |BC       |                15|
+|Trotter and Morton Electrical Constructors BC Ltd |Issued |Electrical Contractor       |5151  |Canada Way  |BC       |                65|
+|Canem Systems Ltd                                 |Issued |Electrical Contractor       |1600  |VALMONT WAY |BC       |                80|
 
 ***
 
@@ -167,17 +167,17 @@ vanbiz_latlongcheck <- vanbiz_valid %>%
   mutate(hascoord = (!is.na(Latitude) & !is.na(Longitude))) %>% 
   mutate(hasaddress = (!is.na(House) & !is.na(Street)))
 
-n_biz_wcoord <- vanbiz_latlongcheck %>% filter(hascoord) %>% nrow() # 5442 biz have coords -> READY
-n_biz_nocoord <- vanbiz_latlongcheck %>% filter(!hascoord) %>% nrow() # 707 biz have no coords
+n_biz_wcoord <- vanbiz_latlongcheck %>% filter(hascoord) %>% nrow() # 5426 biz have coords -> READY
+n_biz_nocoord <- vanbiz_latlongcheck %>% filter(!hascoord) %>% nrow() # 705 biz have no coords
 n_biz_waddress <- vanbiz_latlongcheck %>% filter(!hascoord) %>% 
-  filter(hasaddress) %>% nrow()                       # 665 biz have address -> GEOCODE
+  filter(hasaddress) %>% nrow()                       # 663 biz have address -> GEOCODE
 n_biz_noaddress <- vanbiz_latlongcheck %>% filter(!hascoord) %>% 
   filter(!hasaddress) %>% nrow()                       # 42 biz have no address -> Google API 
 ```
 
-1. 5442 businesses have geo coordinates. These are ready to be converted into geojson.  
-2. 707 businesses do not have geo coordinates, they will have to be geocoded.  
-    + 665 of these have addresses, they will be ggmap-geocoded  
+1. 5426 businesses have geo coordinates. These are ready to be converted into geojson.  
+2. 705 businesses do not have geo coordinates, they will have to be geocoded.  
+    + 663 of these have addresses, they will be ggmap-geocoded  
     + 42 of these do not have addresses, they will be GooglePlaces-geocoded  
 
 ggmap-geocoding via google's api takes in a query as a full address instead of split into Unit, House number, street number, etc. My early attempts with geocoding failed when zipcodes were included as zipcodes often change or are inaccurate. In the following code chunk, I added one column to house the address query and another column to track if each business was successfully geocoded.
@@ -189,7 +189,7 @@ vanbiz_pregeocoded <- vanbiz_latlongcheck %>%
   mutate(full_address = "not set",
          geocode = "not run")
 
-# write_rds(vanbiz_pregeocoded,"~/Developer/project_portfolio2/vanbiz_pregeocoded.rds")
+# write_rds(vanbiz_pregeocoded,"~/Developer/project_vanbiz/r/vanbiz_pregeocoded.rds")
 ```
 
 
@@ -199,7 +199,7 @@ While creating a function for geocoding, I created a simple helper function belo
 
 
 ```r
-vanbiz_pregeocoded <- read_rds("~/Developer/project_portfolio2/vanbiz_pregeocoded.rds")
+vanbiz_pregeocoded <- read_rds("~/Developer/project_vanbiz/r/vanbiz_pregeocoded.rds")
 
 #helper function
 isGeocoded <- function(geocode_list) {
@@ -272,7 +272,7 @@ geocode_biz <- function(vanbiz_df) {
 }
 
 # vanbiz_geocoded <- geocode_biz(vanbiz_pregeocoded)
-# write_rds(vanbiz_geocoded,"~/Developer/project_portfolio2/vanbiz_geocoded.rds")
+# write_rds(vanbiz_geocoded,"~/Developer/project_vanbiz/r/vanbiz_geocoded.rds")
 ```
   
 Installing a [nominatim server/local instance that runs on OpenStreetMap](https://wiki.openstreetmap.org/wiki/Nominatim/Installation) is an alternative to using the `geocode` package or other hosted geocoding API.  
@@ -289,11 +289,11 @@ The function below uses the `nearbysearch` API of google. Query requests of this
 
 
 ```r
-vanbiz_geocoded <- read_rds("~/Developer/project_portfolio2/vanbiz_geocoded.rds")
+vanbiz_geocoded <- read_rds("~/Developer/project_vanbiz/r/vanbiz_geocoded.rds")
 
-View(vanbiz_geocoded$vanbiz_hascoord) # 5442 biz have valid coordinates
+View(vanbiz_geocoded$vanbiz_hascoord) # 5426 biz have valid coordinates
 View(vanbiz_geocoded$vanbiz_hasaddress_success) # 659 biz have addresses that were successfully geocoded
-View(vanbiz_geocoded$vanbiz_googlesearch) # 48 have no addresses or have addresses that were NOT sucessfully geocoded
+View(vanbiz_geocoded$vanbiz_googlesearch) # 46 have no addresses or have addresses that were NOT sucessfully geocoded
 
 # run google search api on these addresses to get addressses for geocoding
 # performed via https://developers.google.com/places/web-service/search
@@ -369,49 +369,40 @@ google_maps_search <- function(query_df = vanbiz_geocoded$vanbiz_googlesearch,
 
 # vanbiz_googlesearched <- google_maps_search(query_df=vanbiz_geocoded$vanbiz_googlesearch)
 # write_rds(vanbiz_googlesearched,
-#           path = "~/Developer/project_portfolio2/vanbiz_googlesearched.rds")
+          # path = "~/Developer/project_vanbiz/r/vanbiz_googlesearched.rds")
 ```
 
 ### Manual inspection of GoogleMapsAPI query results  
 
 More often than not, there are disrepancies between the query result and the actual business information. Through this, I learned that even google is not perfect when it comes to data collection. Thus, it is always important to look at subsamples of the data before producing a final output.  
 
-Below I have included a simple function to query a business name or string if I spot any suspicious google results. Preliminary view of the data shows that some businesses were sufficiently accurate but for simplicity and to save time, I have chosen to abandon the 48 googlesearched results. This leaves
+Below I have included a simple function to query a business name or string if I spot any suspicious google results. Preliminary view of the data shows that some businesses were sufficiently accurate but for simplicity and to save time, I have chosen to abandon the 46 googlesearched results. This leaves
 me with the vanbiz_hascoord and vanbiz_hasaddress_success datasets.  
 
 
 ```r
 # Look for any disrepancies between our business name and the google maps search
-vanbiz_googlesearched <- read_rds("~/Developer/project_portfolio2/vanbiz_googlesearched.rds")
+vanbiz_googlesearched <- read_rds("~/Developer/project_vanbiz/r/vanbiz_googlesearched.rds")
 vanbiz_view <- vanbiz_googlesearched %>% select(BusinessName,goo_name,everything())
+```
 
-#tester function
-google_query <- function(query_string) {
-  link = paste0("https://maps.googleapis.com/maps/api/place/nearbysearch/json?",
-                "location=","49.253386,-123.130621",
-                "&radius=",50000,
-                "&name=",(query_string %>% 
-                  str_trim(side="both") %>% 
-                  str_replace_all("[^[:alnum:] ]"," ") %>% 
-                  str_replace_all(" ","+")),
-                "&key=","AIzaSyDL7KVzfaUb-17Ew_cycTG0GoAlf9YammY")
-  print(link)
-  link %>% getURL() %>% fromJSON()
-}
-# abc <- google_query("Karoleena Homes")
+
+
+
+```r
 kable(head(vanbiz_view))
 ```
 
 
 
-|BusinessName                             |goo_name                                | index|LicenceRSN |LicenceNumber |LicenceRevisionNumber |BusinessTradeName |Status |IssuedDate          |ExpiredDate         |BusinessType      |BusinessSubType      |Unit |UnitType |House |Street |City   |Province |Country |PostalCode |LocalArea                    | NumberOfEmployees| FeePaid|ExtractDate | Latitude| Longitude|hascoord |hasaddress |full_address |geocode |  goo_lat|   goo_lng|goo_address                          |
-|:----------------------------------------|:---------------------------------------|-----:|:----------|:-------------|:---------------------|:-----------------|:------|:-------------------|:-------------------|:-----------------|:--------------------|:----|:--------|:-----|:------|:------|:--------|:-------|:----------|:----------------------------|-----------------:|-------:|:-----------|--------:|---------:|:--------|:----------|:------------|:-------|--------:|---------:|:------------------------------------|
-|HR Pacific Construction Management Ltd   |not found                               |  1047|2566726    |16-107916     |00                    |NA                |Issued |2016-02-09 14:35:31 |2016-12-31 00:00:00 |Contractor        |Building             |NA   |NA       |NA    |NA     |Golden |BC       |CAN     |V0A 1H0    |NA                           |                15|     205|2016-12-23  |       NA|        NA|FALSE    |FALSE      |not set      |not run |  0.00000|    0.0000|not found                            |
-|BCAA Holdings Ltd                        |BCAA                                    |  9429|2587855    |16-129034     |00                    |NA                |Issued |2015-12-01 12:27:21 |2016-12-31 00:00:00 |Office            |Insurance Agent      |NA   |NA       |NA    |NA     |NA     |NA       |CAN     |V5G 4T1    |11-Arbutus Ridge             |                15|     136|2016-12-23  |       NA|        NA|FALSE    |FALSE      |not set      |not run | 49.25518| -122.9989|4567 Canada Way, Burnaby             |
-|Martin Glotman Engineering Ltd           |Glotman Simpson Consulting Engineers    |  9442|2588054    |16-129233     |00                    |NA                |Issued |2015-12-07 11:21:09 |2016-12-31 00:00:00 |Office            |Engineer             |NA   |NA       |NA    |NA     |NA     |NA       |CAN     |V6J 1N5    |08-Fairview                  |                26|     136|2016-12-23  |       NA|        NA|FALSE    |FALSE      |not set      |not run | 49.26734| -123.1423|1661 West 5th Avenue, Vancouver      |
-|Golden Properties Ltd                    |Golden Properties Ltd                   |  9443|2588057    |16-129236     |00                    |NA                |Issued |2015-12-29 09:54:40 |2016-12-31 00:00:00 |Office            |Property Management  |NA   |NA       |NA    |NA     |NA     |NA       |CAN     |V6E 2K3    |02-Central Business/Downtown |                12|     136|2016-12-23  |       NA|        NA|FALSE    |FALSE      |not set      |not run | 49.28874| -123.1217|1177 West Hastings Street, Vancouver |
-|Sing Tao(canada) Ltd                     |Sing Tao Daily                          |  9455|2588364    |16-129543     |00                    |NA                |Issued |2016-01-04 09:55:09 |2016-12-31 00:00:00 |Office            |Publisher            |NA   |NA       |NA    |NA     |NA     |NA       |CAN     |V6P 3M2    |22-Marpole                   |               122|     153|2016-12-23  |       NA|        NA|FALSE    |FALSE      |not set      |not run | 49.27933| -123.1015|128 Keefer Street, Vancouver         |
-|Xpera Risk Mitigation & Investigation LP |Xpera Risk Mitigation and Investigation | 13203|2608365    |16-149523     |00                    |NA                |Issued |2015-12-29 16:37:30 |2016-12-31 00:00:00 |Security Services |Security Consultants |NA   |NA       |NA    |NA     |NA     |NA       |NA      |NA         |NA                           |                50|     136|2016-12-23  |       NA|        NA|FALSE    |FALSE      |not set      |not run | 49.22284| -122.8331|17 Fawcett Road #225, Coquitlam      |
+|BusinessName                         |goo_name                      | index|LicenceRSN |LicenceNumber |LicenceRevisionNumber |BusinessTradeName                    |Status |IssuedDate          |ExpiredDate         |BusinessType      |BusinessSubType  |Unit |UnitType |House |Street |City |Province |Country |PostalCode |LocalArea   | NumberOfEmployees| Latitude| Longitude| FeePaid|ExtractDate |hascoord |hasaddress |full_address |geocode |  goo_lat|   goo_lng|goo_address                              |
+|:------------------------------------|:-----------------------------|-----:|:----------|:-------------|:---------------------|:------------------------------------|:------|:-------------------|:-------------------|:-----------------|:----------------|:----|:--------|:-----|:------|:----|:--------|:-------|:----------|:-----------|-----------------:|--------:|---------:|-------:|:-----------|:--------|:----------|:------------|:-------|--------:|---------:|:----------------------------------------|
+|Viking Security Services Inc         |Viking Fire Protection Inc    |  1390|2608450    |16-149608     |00                    |NA                                   |Issued |2016-03-27 22:57:56 |2016-12-31 00:00:00 |Security Services |Security Patrol  |NA   |NA       |NA    |NA     |NA   |NA       |NA      |NA         |NA          |                10|       NA|        NA|     176|2017-07-28  |FALSE    |FALSE      |not set      |not run | 49.18872| -122.9867|7885 North Fraser Way, Unit 140, Burnaby |
+|Falcon Security Inc                  |Falcon Security Inc.          |  1440|2608408    |16-149566     |00                    |NA                                   |Issued |2015-11-13 12:04:17 |2016-12-31 00:00:00 |Security Services |Security Guard   |NA   |NA       |NA    |NA     |NA   |NA       |NA      |NA         |22-Marpole  |                15|       NA|        NA|     136|2017-07-28  |FALSE    |FALSE      |not set      |not run | 49.20403| -123.1341|1200 West 73rd Avenue, Vancouver         |
+|Action Lock & Safe Ltd               |Action Lock & Security        |  1441|2608407    |16-149565     |00                    |Action Integrated Security Solutions |Issued |2015-12-23 14:24:50 |2016-12-31 00:00:00 |Security Services |Retail Alarms    |NA   |NA       |NA    |NA     |NA   |NA       |NA      |NA         |22-Marpole  |                24|       NA|        NA|     136|2017-07-28  |FALSE    |FALSE      |not set      |not run | 49.20486| -123.1344|8866 Hudson Street, Vancouver            |
+|Source Security & Investigations Inc |not found                     |  3313|2608461    |16-149619     |00                    |NA                                   |Issued |2016-02-04 08:59:40 |2016-12-31 00:00:00 |Security Services |Other            |NA   |NA       |NA    |NA     |NA   |NA       |NA      |NA         |NA          |                45|       NA|        NA|     176|2017-07-28  |FALSE    |FALSE      |not set      |not run |  0.00000|    0.0000|not found                                |
+|(Sean O'Leary)                       |Sean O George Law Corporation |  3334|2608448    |16-149606     |00                    |Safetech Alarm Systems               |Issued |2015-11-16 08:04:52 |2016-12-31 00:00:00 |Security Services |Alarm Monitoring |NA   |NA       |NA    |NA     |NA   |NA       |NA      |NA         |NA          |                26|       NA|        NA|     136|2017-07-28  |FALSE    |FALSE      |not set      |not run | 49.28499| -123.1108|375 Water Street, Vancouver              |
+|Premier Security Inc                 |Premier Security Inc          |  3359|2608418    |16-149576     |00                    |NA                                   |Issued |2015-11-12 16:46:46 |2016-12-31 00:00:00 |Security Services |Security Patrol  |NA   |NA       |NA    |NA     |NA   |NA       |NA      |NA         |08-Fairview |               140|       NA|        NA|     136|2017-07-28  |FALSE    |FALSE      |not set      |not run | 49.26369| -123.1278|1055 West Broadway, Vancouver            |
 
 ### Producing the final dataframe  
 
@@ -439,10 +430,10 @@ Then, we combine the 2 datasets via `rbind()`. We also remove the geocode column
 vanbiz_kept <- rbind(vanbiz_geocoded$vanbiz_hascoord,
                      vanbiz_geocoded$vanbiz_hasaddress_success)
 
-nrow(vanbiz_kept) # 6101 businesses
+nrow(vanbiz_kept) # 6085 businesses
 ```
 
-[1] 6101
+[1] 6085
 
 ```r
 # remove the geocode column which is a list. This would throw errors during geojson_write()
@@ -453,19 +444,19 @@ kable(head(vanbiz_vancouver))
 
 
 
-| index|LicenceRSN |LicenceNumber |LicenceRevisionNumber |BusinessName                 |BusinessTradeName            |Status |IssuedDate          |ExpiredDate         |BusinessType             |BusinessSubType |Unit |UnitType |House |Street     |City      |Province |Country |PostalCode |LocalArea    | NumberOfEmployees| FeePaid|ExtractDate | Latitude| Longitude|hascoord |hasaddress |full_address |
-|-----:|:----------|:-------------|:---------------------|:----------------------------|:----------------------------|:------|:-------------------|:-------------------|:------------------------|:---------------|:----|:--------|:-----|:----------|:---------|:--------|:-------|:----------|:------------|-----------------:|-------:|:-----------|--------:|---------:|:--------|:----------|:------------|
-| 15798|2559157    |16-100350     |00                    |Advanced Parking Systems Ltd |NA                           |Issued |2016-01-12 12:07:05 |2016-12-31 00:00:00 |Auto Parking Lot/Parkade |NA              |NA   |NA       |1019  |NELSON ST  |Vancouver |BC       |CAN     |V6E1J1     |01-West End  |               150|     136|2016-12-23  | 49.28191| -123.1266|TRUE     |TRUE       |not set      |
-| 15832|2559191    |16-100384     |00                    |Diamond Parking Ltd          |DPS Diamond Parking Services |Issued |2016-02-19 14:29:53 |2016-12-31 00:00:00 |Auto Parking Lot/Parkade |NA              |NA   |NA       |865   |W Broadway |Vancouver |BC       |CAN     |V5Z 1J9    |08-Fairview  |                70|     136|2016-12-23  | 49.26365| -123.1235|TRUE     |TRUE       |not set      |
-| 15833|2559192    |16-100385     |00                    |Diamond Parking Ltd          |DPS Diamond Parking Services |Issued |2016-02-16 10:45:20 |2016-12-31 00:00:00 |Auto Parking Lot/Parkade |NA              |2075 |Unit     |2085  |Yew St     |Vancouver |BC       |CAN     |           |07-Kitsilano |                70|     136|2016-12-23  | 49.26768| -123.1554|TRUE     |TRUE       |not set      |
-| 15834|2559193    |16-100386     |00                    |Diamond Parking Ltd          |DPS Diamond Parking Services |Issued |2016-02-16 10:48:56 |2016-12-31 00:00:00 |Auto Parking Lot/Parkade |NA              |NA   |NA       |2412  |Laurel St  |Vancouver |BC       |CAN     |           |08-Fairview  |                70|     136|2016-12-23  | 49.26402| -123.1237|TRUE     |TRUE       |not set      |
-| 15846|2559205    |16-100398     |00                    |Diamond Parking Ltd          |Diamond Parking Services     |Issued |2016-02-16 11:00:50 |2016-12-31 00:00:00 |Auto Parking Lot/Parkade |NA              |NA   |NA       |1022  |NELSON ST  |Vancouver |BC       |CAN     |V6E 4S7    |01-West End  |                70|     136|2016-12-23  | 49.28166| -123.1273|TRUE     |TRUE       |not set      |
-| 15850|2559209    |16-100402     |00                    |Diamond Parking Ltd          |NA                           |Issued |2016-02-16 10:57:34 |2016-12-31 00:00:00 |Auto Parking Lot/Parkade |NA              |NA   |NA       |3588  |KINGSWAY   |Vancouver |BC       |CAN     |V5R 5L7    |21-Killarney |                10|     136|2016-12-23  | 49.23187| -123.0269|TRUE     |TRUE       |not set      |
+| index|LicenceRSN |LicenceNumber |LicenceRevisionNumber |BusinessName                      |BusinessTradeName             |Status  |IssuedDate          |ExpiredDate         |BusinessType                   |BusinessSubType     |Unit      |UnitType |House |Street           |City      |Province |Country |PostalCode |LocalArea                    | NumberOfEmployees| Latitude| Longitude| FeePaid|ExtractDate |hascoord |hasaddress |full_address |
+|-----:|:----------|:-------------|:---------------------|:---------------------------------|:-----------------------------|:-------|:-------------------|:-------------------|:------------------------------|:-------------------|:---------|:--------|:-----|:----------------|:---------|:--------|:-------|:----------|:----------------------------|-----------------:|--------:|---------:|-------:|:-----------|:--------|:----------|:------------|
+| 15638|2841809    |16-310787     |00                    |Powell Street Holdings Ltd        |Incendio                      |Pending |NA                  |NA                  |Restaurant Class 1             |No Liquor Service   |NA        |NA       |103   |Columbia St      |Vancouver |BC       |Canada  |V6A 2R4    |02-Central Business/Downtown |                10| 49.28346| -123.1025|     136|2017-07-28  |TRUE     |TRUE       |not set      |
+| 15696|2842606    |16-311311     |00                    |Oneplus International Corp        |NA                            |Issued  |2016-11-24 16:02:37 |2016-12-31 00:00:00 |Office                         |Advertising Agent   |2400      |Unit     |1055  |W GEORGIA ST     |Vancouver |BC       |Canada  |NA         |02-Central Business/Downtown |                20| 49.28542| -123.1219|      65|2017-07-28  |TRUE     |TRUE       |not set      |
+| 15720|2750486    |16-125276     |01                    |The Secret Garden Tea Company Inc |NA                            |Issued  |2016-09-08 12:16:23 |2016-12-31 00:00:00 |Restaurant Class 1             |No Liquor Service   |NA        |NA       |2138  |W 40TH AV        |Vancouver |BC       |Canada  |V6M 1W5    |11-Arbutus Ridge             |                20| 49.23525| -123.1560|      32|2017-07-28  |TRUE     |TRUE       |not set      |
+| 15752|2770672    |16-294785     |00                    |Body Energy Club Ltd              |NA                            |Pending |NA                  |NA                  |Ltd Service Food Establishment |NA                  |1st Floor |Unit     |1131  |W GEORGIA ST     |Vancouver |BC       |Canada  |V6E 3G4    |02-Central Business/Downtown |                12| 49.28632| -123.1234|      53|2017-07-28  |TRUE     |TRUE       |not set      |
+| 15756|2753017    |16-277177     |00                    |Angelic Productions Ltd           |Angel In Training             |Issued  |2016-08-30 11:40:10 |2016-12-31 00:00:00 |Production Company             |Film Production     |NA        |NA       |1950  |FRANKLIN ST      |Vancouver |BC       |Canada  |V5L 1R2    |04-Grandview-Woodland        |                40| 49.28178| -123.0640|     110|2017-07-28  |TRUE     |TRUE       |not set      |
+| 15764|2753071    |16-277231     |00                    |1085706 BC Ltd                    |Sunrise Pizza and Steak House |Issued  |2016-09-20 15:31:48 |2016-12-31 00:00:00 |Restaurant Class 1             |With Liquor Service |NA        |NA       |949   |COMMERCIAL DRIVE |Vancouver |BC       |Canada  |V5L 3W8    |04-Grandview-Woodland        |                15| 49.27592| -123.0699|     136|2017-07-28  |TRUE     |TRUE       |not set      |
 
 ```r
 # write_rds(vanbiz_vancouver,
-#           "~/Developer/project_portfolio2/vanbiz_vancouver.rds")
-# vanbiz_vancouver <- read_rds("~/Developer/project_portfolio2/vanbiz_vancouver.rds")
+#           "~/Developer/project_vanbiz/r/vanbiz_vancouver.rds")
+# vanbiz_vancouver <- read_rds("~/Developer/project_vanbiz/r/vanbiz_vancouver.rds")
 ```
 
 ### Finaly geojson conversion  
@@ -476,15 +467,32 @@ I used the tutorial below to convert the dataframe into a functioning geojson fi
 suppressPackageStartupMessages(library(rgdal))
 suppressPackageStartupMessages(library(geojsonio))
 
-# geojson_json(vanbiz_kept[1:2,], lat = 'Latitude', lon = 'Longitude')
-# geojson_write(vanbiz_vancouver, lat = 'Latitude', lon = 'Longitude',
-#               file = "~/Developer/project_portfolio2/vanbiz_vancouver.geojson",
-#               overwrite = T)
+geojson_json(vanbiz_kept[1:2,], lat = 'Latitude', lon = 'Longitude')
+```
+
+```
+## {"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[-123.1024973,49.2834646]},"properties":{"index":15638,"LicenceRSN":"2841809","LicenceNumber":"16-310787","LicenceRevisionNumber":"00","BusinessName":"Powell Street Holdings Ltd ","BusinessTradeName":"Incendio ","Status":"Pending","IssuedDate":null,"ExpiredDate":null,"BusinessType":"Restaurant Class 1","BusinessSubType":"No Liquor Service","Unit":null,"UnitType":null,"House":"103","Street":"Columbia St","City":"Vancouver","Province":"BC","Country":"Canada","PostalCode":"V6A 2R4","LocalArea":"02-Central Business/Downtown","NumberOfEmployees":10,"FeePaid":136,"ExtractDate":"2017-07-28","hascoord":true,"hasaddress":true,"full_address":"not set","geocode":"has coord"}},{"type":"Feature","geometry":{"type":"Point","coordinates":[-123.121943,49.2854191]},"properties":{"index":15696,"LicenceRSN":"2842606","LicenceNumber":"16-311311","LicenceRevisionNumber":"00","BusinessName":"Oneplus International Corp ","BusinessTradeName":null,"Status":"Issued","IssuedDate":"2016-11-24 16:02:37","ExpiredDate":"2016-12-31 00:00:00","BusinessType":"Office","BusinessSubType":"Advertising Agent","Unit":"2400","UnitType":"Unit","House":"1055","Street":"W GEORGIA ST","City":"Vancouver","Province":"BC","Country":"Canada","PostalCode":null,"LocalArea":"02-Central Business/Downtown","NumberOfEmployees":20,"FeePaid":65,"ExtractDate":"2017-07-28","hascoord":true,"hasaddress":true,"full_address":"not set","geocode":"has coord"}}]}
+```
+
+```r
+geojson_write(vanbiz_vancouver, lat = 'Latitude', lon = 'Longitude',
+              file = "~/Developer/project_vanbiz/r/vanbiz_vancouver.geojson",
+              overwrite = T)
+```
+
+```
+## Success! File is at /Users/davidchoy/Developer/project_vanbiz/r/vanbiz_vancouver.geojson
+```
+
+```
+## <geojson>
+##   Path:       ~/Developer/project_vanbiz/r/vanbiz_vancouver.geojson
+##   From class: data.frame
 ```
 
 ### Final result  
 
-See my [mapbox visualization of Vancouver business licenses](https://hochoy.github.io/project_portfolio2/mapbox.html) using cleaned, filtered and geocoded data.  
+See my [mapbox visualization of Vancouver business licenses](https://hochoy.github.io/project_vanbiz/mapbox.html) using cleaned, filtered and geocoded data.  
 
 ***  
 

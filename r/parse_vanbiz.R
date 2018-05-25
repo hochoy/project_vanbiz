@@ -7,14 +7,14 @@ library(dplyr)
 library(plotly)
 library(ggmap)
 library(RCurl)
-source("~/Developer/project_portfolio2/r/custom_func.R")
+source("~/Developer/project_vanbiz/r/custom_func.R")
 
 
 #Then, we read in vancouver business licenses from 
 # http://data.vancouver.ca/datacatalogue/businessLicence.htm courtesy of the City of Vancouver.
 # I've chosen to use the json format of the file here but csv is also available at the vancouver open data website. 
 
-json_path <- "~/Developer/project_portfolio2/r/business_licences.json"
+json_path <- "~/Developer/project_vanbiz/r/2016business_licences.json"
 vanbiz_raw <- fromJSON(json_path,simplifyDataFrame = TRUE,flatten = FALSE)
 str(vanbiz_raw)
 
@@ -32,6 +32,8 @@ vanbiz_properties <- vanbiz_raw$features$properties %>%
   select(index,everything()) %>% 
   mutate(NumberOfEmployees = as.integer(NumberOfEmployees))
 
+vanbiz_properties %>% nrow() #61399 business entries
+
 # There's a crazy amount of registered companies in Vancouver.
 # Thus, we're going to have to narrow down the list.
 # We assume that companies that have more than 10 employees are more likely to hire.
@@ -42,17 +44,17 @@ vanbiz_valid <- vanbiz_properties %>%
   filter(NumberOfEmployees >= 10) %>% 
   filter(Status %in% c("Issued","Pending")) %>% 
   filter(!is.na(BusinessName))
-nrow(vanbiz_valid) # 6149 businesses that pass our filter
+nrow(vanbiz_valid) # 6131 out of 61399 businesses that pass our filter
 
 # Check to see if these businesses have a valid coordinate that we can use with Mapbox GL JS
 vanbiz_latlongcheck <- vanbiz_valid %>% 
   mutate(hascoord = (!is.na(Latitude) & !is.na(Longitude))) %>% 
   mutate(hasaddress = (!is.na(House) & !is.na(Street)))
 
-vanbiz_latlongcheck %>% filter(hascoord) %>% nrow() # 5442 biz have coords -> READY
-vanbiz_latlongcheck %>% filter(!hascoord) %>% nrow() # 707 biz have no coords
+vanbiz_latlongcheck %>% filter(hascoord) %>% nrow() # 5426 biz have coords -> READY
+vanbiz_latlongcheck %>% filter(!hascoord) %>% nrow() # 705 biz have no coords
 vanbiz_latlongcheck %>% filter(!hascoord) %>% 
-  filter(hasaddress) %>% nrow()                       # 665 biz have address -> GEOCODE
+  filter(hasaddress) %>% nrow()                       # 663 biz have address -> GEOCODE
 vanbiz_latlongcheck %>% filter(!hascoord) %>% 
   filter(!hasaddress) %>% nrow()                       # 42 biz have no address -> Google API 
 
@@ -61,10 +63,10 @@ vanbiz_pregeocoded <- vanbiz_latlongcheck %>%
   mutate(full_address = "not set",
          geocode = "not run")
 
-write_rds(vanbiz_pregeocoded,"~/Developer/project_portfolio2/r/vanbiz_pregeocoded.rds")
+write_rds(vanbiz_pregeocoded,"~/Developer/project_vanbiz/r/vanbiz_pregeocoded.rds")
 
 # geocode businesses that do not have coordinates. 
-vanbiz_pregeocoded <- read_rds("~/Developer/project_portfolio2/r/vanbiz_pregeocoded.rds")
+vanbiz_pregeocoded <- read_rds("~/Developer/project_vanbiz/r/vanbiz_pregeocoded.rds")
 
 #helper function
 isGeocoded <- function(geocode_list) {
@@ -124,8 +126,9 @@ geocode_biz <- function(vanbiz_df) {
        vanbiz_googlesearch = vanbiz_googlesearch)
 }
 
-vanbiz_geocoded <- geocode_biz(vanbiz_pregeocoded)
-write_rds(vanbiz_geocoded,"~/Developer/project_portfolio2/r/vanbiz_geocoded.rds")
+## Uncomment to run geocode
+# vanbiz_geocoded <- geocode_biz(vanbiz_pregeocoded)
+# write_rds(vanbiz_geocoded,"~/Developer/project_vanbiz/r/vanbiz_geocoded.rds")
 
 
 # Installing a nominatim server/local instance that runs on OpenStreetMap is an
@@ -151,11 +154,17 @@ write_rds(vanbiz_geocoded,"~/Developer/project_portfolio2/r/vanbiz_geocoded.rds"
 
 
 
-vanbiz_geocoded <- read_rds("~/Developer/project_portfolio2/r/vanbiz_geocoded.rds")
+vanbiz_geocoded <- read_rds("~/Developer/project_vanbiz/r/vanbiz_geocoded.rds")
 
-View(vanbiz_geocoded$vanbiz_hascoord) # 5442 biz have valid coordinates
-View(vanbiz_geocoded$vanbiz_hasaddress_success) # 659 biz have addresses that were successfully geocoded
-View(vanbiz_geocoded$vanbiz_googlesearch) # 48 have no addresses or have addresses that were NOT sucessfully geocoded
+View(vanbiz_geocoded$vanbiz_hascoord) # 5426 biz have valid coordinates
+View(vanbiz_geocoded$vanbiz_hasaddress_success) # 567 biz have addresses that were successfully geocoded
+View(vanbiz_geocoded$vanbiz_googlesearch) # 138 have no addresses or have addresses that were NOT sucessfully geocoded
+
+nrow(vanbiz_geocoded$vanbiz_hascoord) # 5426 aleady have valid coordinates and didn't need geocoding
+nrow(vanbiz_geocoded$vanbiz_hasaddress_success) # 567 biz have addresses that were successfully geocoded
+nrow(vanbiz_geocoded$vanbiz_googlesearch) #138 have no addresses or have addresses that were NOT sucessfully geocoded OR
+                                            # query went over limit!
+
 
 # run google search api on these addresses to get addressses for geocoding
 # performed via https://developers.google.com/places/web-service/search
@@ -230,10 +239,10 @@ google_maps_search <- function(query_df = vanbiz_geocoded$vanbiz_googlesearch,
 
 vanbiz_googlesearched <- google_maps_search(query_df=vanbiz_geocoded$vanbiz_googlesearch)
 write_rds(vanbiz_googlesearched,
-          path = "~/Developer/project_portfolio2/r/vanbiz_googlesearched.rds")
+          path = "~/Developer/project_vanbiz/r/vanbiz_googlesearched.rds")
 
 # Look for any disrepancies between our business name and the google maps search
-vanbiz_googlesearched <- read_rds("~/Developer/project_portfolio2/r/vanbiz_googlesearched.rds")
+vanbiz_googlesearched <- read_rds("~/Developer/project_vanbiz/r/vanbiz_googlesearched.rds")
 vanbiz_view <- vanbiz_googlesearched %>% select(BusinessName,goo_name,everything())
 
 #tester function
@@ -273,8 +282,8 @@ vanbiz_vancouver <- vanbiz_kept %>%
   select(-geocode)
 
 # write_rds(vanbiz_vancouver,
-#           "~/Developer/project_portfolio2/r/vanbiz_vancouver.rds")
-vanbiz_vancouver <- read_rds("~/Developer/project_portfolio2/r/vanbiz_vancouver.rds")
+#           "~/Developer/project_vanbiz/r/vanbiz_vancouver.rds")
+vanbiz_vancouver <- read_rds("~/Developer/project_vanbiz/r/vanbiz_vancouver.rds")
 
 # Link to tutorial to convert r dataframe to geojson
 #https://ropensci.org/tutorials/geojsonio_tutorial.html
@@ -283,5 +292,5 @@ library(geojsonio)
 
 # geojson_json(vanbiz_kept[1:2,], lat = 'Latitude', lon = 'Longitude')
 # geojson_write(vanbiz_vancouver, lat = 'Latitude', lon = 'Longitude',
-#               file = "~/Developer/project_portfolio2/r/vanbiz_vancouver.geojson",
+#               file = "~/Developer/project_vanbiz/r/vanbiz_vancouver.geojson",
 #               overwrite = T)
